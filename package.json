@@ -1,0 +1,14 @@
+{
+  "name": "react-js__news-app",
+  "version": "1.0.0",
+  "description": "React News app",
+  "main": "index.html",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "author": "somebuddy",
+  "license": "MIT",
+  "devDependencies": {
+    "express": "^4.15.2"
+  }
+}
