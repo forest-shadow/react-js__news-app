@@ -1,7 +1,6 @@
-console.log(React);
-console.log(ReactDOM);
+'use strict';
 
-var my_news = [
+let my_news = [
     {
         author: 'Саша Печкин',
         text: 'В четчерг, четвертого числа...',
@@ -19,10 +18,7 @@ var my_news = [
 }
 ];
 
-// ReactDOM.render(
-//     <h1>Hello, world!</h1>,
-//     document.getElementById('root')
-// );
+window.ee = new EventEmitter();
 
 let Article = React.createClass({
     propTypes: {
@@ -102,39 +98,106 @@ let News = React.createClass({
     }
 });
 
-var TestInput = React.createClass({
-    getInitialState: function() {
+let Add = React.createClass({
+    getInitialState: function() { //устанавливаем начальное состояние (state)
         return {
-            myValue: ''
+            agreeNotChecked: true,
+            authorIsEmpty: true,
+            textIsEmpty: true
         };
     },
-    onChangeHandler: function(e) {
-        this.setState({myValue: e.target.value})
+    componentDidMount: function() {
+        ReactDOM.findDOMNode(this.refs.author).focus();
     },
-    onBtnClickHandler: function() {
-        alert(this.state.myValue);
+    onBtnClickHandler: function(e) {
+        e.preventDefault();
+        let textEl = ReactDOM.findDOMNode(this.refs.text);
+
+        let author = ReactDOM.findDOMNode(this.refs.author).value;
+        let text = ReactDOM.findDOMNode(this.refs.text).value;
+
+        let item = [{
+            author: author,
+            text: text,
+            bigText: '...'
+        }];
+
+        window.ee.emit('News.add', item);
+
+        textEl.value = '';
+        this.setState({textIsEmpty: true});
+    },
+    onCheckRuleClick: function(e) {
+        this.setState({agreeNotChecked: !this.state.agreeNotChecked});
+    },
+    onFieldChange: function(fieldName, e) {
+        if (e.target.value.trim().length > 0) {
+            this.setState({[''+fieldName]:false})
+        } else {
+            this.setState({[''+fieldName]:true})
+        }
     },
     render: function() {
+        let agreeNotChecked = this.state.agreeNotChecked,
+            authorIsEmpty = this.state.authorIsEmpty,
+            textIsEmpty = this.state.textIsEmpty;
         return (
-            <div>
+            <form className='add cf'>
                 <input
-                    className='test-input'
-                    value={this.state.myValue}
-                    onChange={this.onChangeHandler}
-                    placeholder='введите значение'
+                    type='text'
+                    className='add__author'
+                    onChange={this.onFieldChange.bind(this, 'authorIsEmpty')}
+                    placeholder='Ваше имя'
+                    ref='author'
                 />
-                <button onClick={this.onBtnClickHandler}>Показать alert</button>
-            </div>
+                <textarea
+                    className='add__text'
+                    onChange={this.onFieldChange.bind(this, 'textIsEmpty')}
+                    placeholder='Текст новости'
+                    ref='text'
+                ></textarea>
+                <label className='add__checkrule'>
+                    <input type='checkbox' ref='checkrule' onChange={this.onCheckRuleClick}/>Я с
+                    огласен с правилами
+                </label>
+                <button
+                    className='add__btn'
+                    onClick={this.onBtnClickHandler}
+                    ref='alert_button'
+                    disabled={agreeNotChecked || authorIsEmpty || textIsEmpty}
+                > О
+                    публиковать новость
+                </button>
+            </form>
         );
     }
 });
 
 let App = React.createClass({
+    getInitialState: function() {
+        return {
+            news: my_news
+        };
+    },
+    componentDidMount: function() {
+        /* Слушай событие "Создана новость" если событие произошло, обнови this.state.news */
+
+        let self = this;
+        window.ee.addListener('News.add', function(item) {
+            let nextNews = item.concat(self.state.news);
+            self.setState( {news: nextNews} );
+            console.log(nextNews);
+        });
+    },
+    componentWillUnmount: function() {
+        /* Больше не слушай событие "Создана новость" */
+        window.ee.removeListener('News.add');
+    },
     render: function() {
         return (
             <div className="app">
+                <Add />
                 <h3>Новости</h3>
-                <TestInput />
                 <News data={my_news} />
             </div>
         );
